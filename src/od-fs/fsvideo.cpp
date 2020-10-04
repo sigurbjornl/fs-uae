@@ -1697,7 +1697,7 @@ int graphics_init(bool mousecapture)
 	//amiga_set_option("gfx_vsyncmode", "busywait");
 
 	if (fsemu) {
-		uae_fsvideo_log("Telling UAE that we are not using vsync");
+		uae_fsvideo_log("Telling UAE that we are not using vsync\n");
 		currprefs.gfx_apmode[0].gfx_vsync = 0;
 		currprefs.gfx_apmode[1].gfx_vsync = 0;
 	}
@@ -2134,7 +2134,7 @@ void toggle_fullscreen(int monid, int mode)
 	STUB("");
 }
 
-#include "fsemu/fsemu-video.h"
+#include "fsemu-video.h"
 
 bool uae_fsvideo_renderframe(int monid, int mode, bool immediate)
 {
@@ -2304,6 +2304,14 @@ bool uae_fsvideo_renderframe(int monid, int mode, bool immediate)
 		memset(frame->buffer, 0, AMIGA_WIDTH * AMIGA_HEIGHT * 4);
 		frame->buffer = frame_copy;
 #endif
+
+		// { "704x540", NULL, 42, 22, 704, 540 },
+		// { "692x540", NULL, 48, 22, 692, 540 },
+
+		frame->limits.x = 48;
+		frame->limits.y = 22;
+		frame->limits.w = 692;
+		frame->limits.h = 540;
 
 		// fsemu_video_post_partial_frame(avidinfo->);
 		fsemu_video_post_frame(frame);

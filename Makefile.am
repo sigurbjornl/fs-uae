@@ -45,6 +45,9 @@ endif
 if W_ERROR_MISSING_DECLARATIONS
 CM_CFLAGS += -Werror=missing-declarations
 endif
+if W_POINTER_ARITH
+CM_CFLAGS += -Wpointer-arith
+endif
 
 
 CM_CFLAGS += -fvisibility=hidden
@@ -72,6 +75,7 @@ LIBS += @OPENGL_LIBS@
 # LIBS += @OS_LIBS@
 LIBS += @PNG_LIBS@
 LIBS += @QT_LIBS@
+LIBS += @MIDI_LIBS@
 LIBS += @SDL2_LIBS@
 LIBS += @SDL2_TTF_LIBS@
 LIBS += @X11_LIBS@
@@ -133,9 +137,12 @@ BUILT_SOURCES = \
 nodist_fs_uae_SOURCES =
 
 fs_uae_SOURCES = \
-        gamemode/lib/gamemode_client.h \
+	src/fsuae/fsuae.h \
+	src/fsuae/fs-uae.h \
 	src/fsuae/fsuae-accelerator.c \
 	src/fsuae/fsuae-accelerator.h \
+	src/fsuae/fsuae-action.c \
+	src/fsuae/fsuae-action.h \
 	src/fsuae/fsuae-config.c \
 	src/fsuae/fsuae-config.h \
 	src/fsuae/fsuae-drives.c \
@@ -144,26 +151,27 @@ fs_uae_SOURCES = \
 	src/fsuae/fsuae-graphics.h \
 	src/fsuae/fsuae-hardware.c \
 	src/fsuae/fsuae-hardware.h \
-	src/fsuae/fsuae-model.c \
-	src/fsuae/fsuae-model.h \
-	src/fsuae/fsuae-sound.c \
-	src/fsuae/fsuae-sound.h \
-	src/fsuae/fsuae-fs-uae.h \
 	src/fsuae/fsuae-input.c \
+	src/fsuae/fsuae-inputport.c \
 	src/fsuae/fsuae-joystick.c \
 	src/fsuae/fsuae-keyboard.c \
 	src/fsuae/fsuae-main.c \
 	src/fsuae/fsuae-menu.c \
+	src/fsuae/fsuae-model.c \
+	src/fsuae/fsuae-model.h \
 	src/fsuae/fsuae-mouse.c \
-	src/fsuae/fsuae.options.h \
+	src/fsuae/fsuae-options.h \
+	src/fsuae/fsuae-oskeyboard.c \
 	src/fsuae/fsuae-paths.c \
 	src/fsuae/fsuae-paths.h \
 	src/fsuae/fsuae-plugins.c \
 	src/fsuae/fsuae-plugins.h \
 	src/fsuae/fsuae-recording.c \
 	src/fsuae/fsuae-recording.h \
-	src/fsuae/uae_config.c \
-	src/fsuae/fsuae-video.c
+	src/fsuae/fsuae-sound.c \
+	src/fsuae/fsuae-sound.h \
+	src/fsuae/fsuae-video.c\
+	src/fsuae/uae_config.c
 
 
 if WINDOWS
@@ -401,7 +409,9 @@ libuae_a_SOURCES = \
 	src/include/uae/api.h \
 	src/include/uae/asm.h \
 	src/include/uae/assert.h \
+	src/include/uae/atomic.h \
 	src/include/uae/attributes.h \
+	src/include/uae/byteswap.h \
 	src/include/uae/caps.h \
 	src/include/uae/cdrom.h \
 	src/include/uae/cycleunit.h \
@@ -418,6 +428,7 @@ libuae_a_SOURCES = \
 	src/include/uae/likely.h \
 	src/include/uae/limits.h \
 	src/include/uae/log.h \
+	src/include/uae/maccess.h \
 	src/include/uae/memory.h \
 	src/include/uae/mman.h \
 	src/include/uae/parser.h \
@@ -509,6 +520,8 @@ libuae_a_SOURCES = \
 	src/od-fs/machdep/ppc/maccess.h \
 	src/od-fs/machdep/rpt.h \
 	src/od-fs/machdep/x86/maccess.h \
+	src/od-fs/midi.cpp \
+	src/od-fs/midi.h \
 	src/od-fs/mman.cpp \
 	src/od-fs/mouse.cpp \
 	src/od-fs/mp3decoder.h \
@@ -540,13 +553,16 @@ libuae_a_SOURCES = \
 	src/od-win32/caps/caps_win32.cpp \
 	src/od-win32/caps/caps_win32.h \
 	src/od-win32/clipboard_win32.cpp \
+	src/od-win32/clipboard_win32.h \
 	src/od-win32/debug_win32.h \
 	src/od-win32/dxwrap.h \
 	src/od-win32/md-fpp.h \
+	src/od-win32/midi.h \
 	src/od-win32/parser.h \
 	src/od-win32/picasso96_win.cpp \
 	src/od-win32/picasso96_win.h \
 	src/od-win32/serial_win32.cpp \
+	src/od-win32/win32.h \
 	src/od-win32/win32gfx.h \
 	src/od-win32/win32_uaenet.cpp \
 	src/patch.cpp \
@@ -801,11 +817,161 @@ libfsemu_a_SOURCES = \
 
 if FSEMU
 noinst_LIBRARIES += libfsemu2.a
-# AM_CPPFLAGS += -I$(s)/libfsemu/include
+ AM_CPPFLAGS += -I$(s)/fsemu/src
 fs_uae_LDADD += libfsemu2.a
-# fs_uae_device_helper_LDADD += libfsemu2.a
+fs_uae_device_helper_LDADD += libfsemu2.a
 libfsemu2_a_SOURCES = \
-	src/fsemu/fsemu-all.c
+        fsemu/gamemode/lib/gamemode_client.h \
+        fsemu/manymouse/linux_evdev.c \
+        fsemu/manymouse/macosx_hidmanager.c \
+        fsemu/manymouse/macosx_hidutilities.c \
+        fsemu/manymouse/manymouse.c \
+        fsemu/manymouse/manymouse.h \
+        fsemu/manymouse/windows_wminput.c \
+        fsemu/manymouse/x11_xinput2.c \
+	fsemu/src/fsemu-all.h \
+	fsemu/src/fsemu-button.h \
+	fsemu/src/fsemu-action.c \
+	fsemu/src/fsemu-action.h \
+	fsemu/src/fsemu-audio-alsa.c \
+	fsemu/src/fsemu-audio-alsa.h \
+	fsemu/src/fsemu-audio-buffer.c \
+	fsemu/src/fsemu-audio-buffer.h \
+	fsemu/src/fsemu-audio.c \
+	fsemu/src/fsemu-audio.h \
+	fsemu/src/fsemu-axis.h \
+	fsemu/src/fsemu-background.c \
+	fsemu/src/fsemu-background.h \
+	fsemu/src/fsemu-color.h \
+	fsemu/src/fsemu-common.c \
+	fsemu/src/fsemu-common.h \
+	fsemu/src/fsemu-compat.h \
+	fsemu/src/fsemu-config.c \
+	fsemu/src/fsemu-config.h \
+	fsemu/src/fsemu-control.c \
+	fsemu/src/fsemu-control.h \
+	fsemu/src/fsemu-controller.c \
+	fsemu/src/fsemu-controller.h \
+	fsemu/src/fsemu-data.c \
+	fsemu/src/fsemu-data.h \
+	fsemu/src/fsemu-emuthread.c \
+	fsemu/src/fsemu-emuthread.h \
+	fsemu/src/fsemu-events.c \
+	fsemu/src/fsemu-events.h \
+	fsemu/src/fsemu-fade.c \
+	fsemu/src/fsemu-fade.h \
+	fsemu/src/fsemu-font.c \
+	fsemu/src/fsemu-font.h \
+	fsemu/src/fsemu-fontcache.c \
+	fsemu/src/fsemu-fontcache.h \
+	fsemu/src/fsemu-frame.c \
+	fsemu/src/fsemu-frame.h \
+	fsemu/src/fsemu-gamemode.c \
+	fsemu/src/fsemu-gamemode.h \
+	fsemu/src/fsemu-glib.h \
+	fsemu/src/fsemu-opengl.h \
+	fsemu/src/fsemu-oskeyboard.c \
+	fsemu/src/fsemu-oskeyboard.h \
+	fsemu/src/fsemu-glvideo.c \
+	fsemu/src/fsemu-glvideo.h \
+	fsemu/src/fsemu-gui.c \
+	fsemu/src/fsemu-gui.h \
+	fsemu/src/fsemu-helper.c \
+	fsemu/src/fsemu-helper.h \
+	fsemu/src/fsemu-hud.c \
+	fsemu/src/fsemu-hud.h \
+	fsemu/src/fsemu-image.c \
+	fsemu/src/fsemu-image.h \
+	fsemu/src/fsemu-inifile.c \
+	fsemu/src/fsemu-inifile.h \
+	fsemu/src/fsemu-input.c \
+	fsemu/src/fsemu-input.h \
+	fsemu/src/fsemu-inputdevice.c \
+	fsemu/src/fsemu-inputdevice.h \
+	fsemu/src/fsemu-inputmode.c \
+	fsemu/src/fsemu-inputmode.h \
+	fsemu/src/fsemu-inputport.c \
+	fsemu/src/fsemu-inputport.h \
+	fsemu/src/fsemu-key.h \
+	fsemu/src/fsemu-keyboard.h \
+	fsemu/src/fsemu-layer.h \
+	fsemu/src/fsemu-layout.c \
+	fsemu/src/fsemu-layout.h \
+	fsemu/src/fsemu-log.c \
+	fsemu/src/fsemu-log.h \
+	fsemu/src/fsemu-mainmenu.c \
+	fsemu/src/fsemu-mainmenu.h \
+	fsemu/src/fsemu-manymouse.c \
+	fsemu/src/fsemu-manymouse.h \
+	fsemu/src/fsemu-menu.c \
+	fsemu/src/fsemu-menu.h \
+	fsemu/src/fsemu-module.c \
+	fsemu/src/fsemu-module.h \
+	fsemu/src/fsemu-monitor.c \
+	fsemu/src/fsemu-monitor.h \
+	fsemu/src/fsemu-mouse.c \
+	fsemu/src/fsemu-mouse.h \
+	fsemu/src/fsemu-mutex.c \
+	fsemu/src/fsemu-mutex.h \
+	fsemu/src/fsemu-opengl.c \
+	fsemu/src/fsemu-opengl.h \
+	fsemu/src/fsemu-option.c \
+	fsemu/src/fsemu-option.h \
+	fsemu/src/fsemu-options.h \
+	fsemu/src/fsemu-oskeyboard.c \
+	fsemu/src/fsemu-oskeyboard.h \
+	fsemu/src/fsemu-osmenu.c \
+	fsemu/src/fsemu-osmenu.h \
+	fsemu/src/fsemu-perfgui.c \
+	fsemu/src/fsemu-perfgui.h \
+	fsemu/src/fsemu-quit.c \
+	fsemu/src/fsemu-quit.h \
+	fsemu/src/fsemu-refable.c \
+	fsemu/src/fsemu-refable.h \
+	fsemu/src/fsemu-render.c \
+	fsemu/src/fsemu-render.h \
+	fsemu/src/fsemu-savestate.c \
+	fsemu/src/fsemu-savestate.h \
+	fsemu/src/fsemu-screenshot.c \
+	fsemu/src/fsemu-screenshot.h \
+	fsemu/src/fsemu-sdl.h \
+	fsemu/src/fsemu-sdlaudio.c \
+	fsemu/src/fsemu-sdlaudio.h \
+	fsemu/src/fsemu-sdlgamecontrollerdb.c \
+	fsemu/src/fsemu-sdlgamecontrollerdb.h \
+	fsemu/src/fsemu-sdlinput.c \
+	fsemu/src/fsemu-sdlinput.h \
+	fsemu/src/fsemu-sdlvideo.c \
+	fsemu/src/fsemu-sdlvideo.h \
+	fsemu/src/fsemu-sdlwindow.c \
+	fsemu/src/fsemu-sdlwindow.h \
+	fsemu/src/fsemu-shader.c \
+	fsemu/src/fsemu-shader.h \
+	fsemu/src/fsemu-startupinfo.c \
+	fsemu/src/fsemu-startupinfo.h \
+	fsemu/src/fsemu-stream.c \
+	fsemu/src/fsemu-stream.h \
+	fsemu/src/fsemu-theme.c \
+	fsemu/src/fsemu-theme.h \
+	fsemu/src/fsemu-thread.c \
+	fsemu/src/fsemu-thread.h \
+	fsemu/src/fsemu-time.c \
+	fsemu/src/fsemu-time.h \
+	fsemu/src/fsemu-titlebar.c \
+	fsemu/src/fsemu-titlebar.h \
+	fsemu/src/fsemu-types.h \
+	fsemu/src/fsemu-util.c \
+	fsemu/src/fsemu-util.h \
+	fsemu/src/fsemu-video.c \
+	fsemu/src/fsemu-video.h \
+	fsemu/src/fsemu-videothread.c \
+	fsemu/src/fsemu-videothread.h \
+	fsemu/src/fsemu-widget.c \
+	fsemu/src/fsemu-widget.h \
+	fsemu/src/fsemu-window.c \
+	fsemu/src/fsemu-window.h \
+	fsemu/src/fsemu-xmlshader.c \
+	fsemu/src/fsemu-xmlshader.h
 endif
 
 if BUILTIN_CEF
@@ -814,18 +980,18 @@ fs_uae_LDADD += cef/libcef_dll/libcef_dll_wrapper.a -L $(s)/cef/Release -lcef
 endif
 
 if BUILTIN_MANYMOUSE
-noinst_LIBRARIES += libmanymouse.a
-AM_CPPFLAGS += -I$(s)/manymouse
-fs_uae_LDADD += libmanymouse.a
-fs_uae_device_helper_LDADD += libmanymouse.a
-libmanymouse_a_SOURCES = \
-	manymouse/linux_evdev.c \
-	manymouse/macosx_hidmanager.c \
-	manymouse/macosx_hidutilities.c \
-	manymouse/manymouse.c \
-	manymouse/manymouse.h \
-	manymouse/windows_wminput.c \
-	manymouse/x11_xinput2.c
+# noinst_LIBRARIES += libmanymouse.a
+# AM_CPPFLAGS += -I$(s)/manymouse
+# fs_uae_LDADD += libmanymouse.a
+# fs_uae_device_helper_LDADD += libmanymouse.a
+# libmanymouse_a_SOURCES = \
+# 	manymouse/linux_evdev.c \
+# 	manymouse/macosx_hidmanager.c \
+# 	manymouse/macosx_hidutilities.c \
+# 	manymouse/manymouse.c \
+# 	manymouse/manymouse.h \
+# 	manymouse/windows_wminput.c \
+# 	manymouse/x11_xinput2.c
 endif
 
 if WITH_GLAD
@@ -1368,6 +1534,37 @@ EXTRA_DIST = $(TESTS) $(EXTRA_TESTS) \
 	dist/windows/clib.py \
 	dist/windows/iscc.py \
 	dist/windows/sign.py \
+	docs/action-replay.md \
+	docs/amiga-forever.md \
+	docs/amigaos-4-1.md \
+	docs/amikit.md \
+	docs/bridgeboard.md \
+	docs/compiling.md \
+	docs/cyberstorm-ppc.md \
+	docs/examples \
+	docs/examples/Default.fs-uae \
+	docs/examples/Keyboard.ini \
+	docs/faq.md \
+	docs/getting-started.md \
+	docs/g-sync.md \
+	docs/issues.md \
+	docs/jit-compiler.md \
+	docs/joysticks.md \
+	docs/keyboard.md \
+	docs/kickstarts.md \
+	docs/linux.md \
+	docs/macos.md \
+	docs/mouse.md \
+	docs/old-files.md \
+	docs/portable.md \
+	docs/serial-port.md \
+	docs/to-do.md \
+	docs/variable-refresh-rate.md \
+	docs/vpar.md \
+	docs/vsync.md \
+	docs/whdload.md \
+	docs/windows.md \
+	docs/x-arcade.md \
 	flac/include/FLAC/all.h \
 	flac/include/FLAC/assert.h \
 	flac/include/FLAC/callback.h \
@@ -1377,8 +1574,8 @@ EXTRA_DIST = $(TESTS) $(EXTRA_TESTS) \
 	flac/include/FLAC/ordinals.h \
 	flac/include/FLAC/stream_decoder.h \
 	flac/include/FLAC/stream_encoder.h \
-	gamemode/LICENSE.txt \
-	gamemode/README.md \
+	fsemu/gamemode/LICENSE.txt \
+	fsemu/gamemode/README.md \
 	fs-uae.spec \
 	icon/fs-uae.ico \
 	glad/include/glad/glad.h \
@@ -1481,7 +1678,8 @@ EXTRA_DIST = $(TESTS) $(EXTRA_TESTS) \
 	share/applications \
 	share/fs-uae \
 	share/icons \
-	share/mime
+	share/mime \
+	standalone.fs
 
 CLEANFILES = $(BUILT_SOURCES)
 
@@ -1661,11 +1859,11 @@ install-data-hook: mo fs-uae.dat
 	cp -R $(s)/share/mime/* $(DESTDIR)$(datadir)/mime
 
 uninstall-local:
-	rm -f $(DESTDIR)$(datadir)/applications/fs-uae.desktop
+	rm -f $(DESTDIR)$(datadir)/applications/net.fs_uae.FS-UAE.desktop
 	rm -Rf $(DESTDIR)$(datadir)/fs-uae
-	find $(DESTDIR)$(datadir)/icons/hicolor -name fs-uae.png -delete
+	find $(DESTDIR)$(datadir)/icons/hicolor -name net.fs_uae.FS-UAE.png -delete
 	find $(DESTDIR)$(datadir)/locale -name fs-uae.mo -delete
-	rm -f $(DESTDIR)$(datadir)/mime/packages/fs-uae.xml
+	rm -f $(DESTDIR)$(datadir)/mime/packages/net.fs_uae.FS-UAE.xml
 
 clean-local:
 	rm -f fs-uae.dat

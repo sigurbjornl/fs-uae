@@ -2,6 +2,12 @@
 
 This document has some information specific to the Windows version of FS-UAE.
 
+## Performance
+
+To ensure best and most stable performance, go to Control Panel, and
+in Power Options, change power plan to `High performance` (might be found
+under `Show additional plans`.
+
 ## Amiga Forever
 
 FS-UAE Launcher should automatically find Amiga [kickstarts](kickstarts.md)
@@ -37,14 +43,14 @@ FS-UAE.
 The following software has been reported by users to cause problems for
 FS-UAE:
 
-* Trillian overlay - It has been reported that using FS-UAE with Trillian
+- Trillian overlay - It has been reported that using FS-UAE with Trillian
   chat overlay can cause FS-UAE to crash. You should try to disable the
   Trillian overlay if that is the case.
-* Outpost Security Suite Pro 8.0 (4164.639.1856) might cause system to
+- Outpost Security Suite Pro 8.0 (4164.639.1856) might cause system to
   freeze when used with FS-UAE ("It’s just a matter of enabling 'Auto-Learn'
   mode just before running FS-UAE for the first time, and all will be fine"
   http://eab.abime.net/showthread.php?t=69080).
-* Avast anti-virus has been reported to interfere with thumbnail downloads
+- Avast anti-virus has been reported to interfere with thumbnail downloads
   in FS-UAE Launcher, causing the downloader to "hang" on a thumbnail.
   The visible effect to the user is that thumbnails suddenly stop appearing
   and a launcher restart is needed to make thumbnails appear again. If you

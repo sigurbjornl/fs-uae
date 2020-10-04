@@ -68,9 +68,9 @@ extern uae_u16 serper;
 #ifdef FSUAE // NL
 #include "uae/fs.h"
 
-#include "fsemu/fsemu-frame.h"
-#include "fsemu/fsemu-quit.h"
-#include "fsemu/fsemu-time.h"
+#include "fsemu-frame.h"
+#include "fsemu-quit.h"
+#include "fsemu-time.h"
 #include <fs/emu/hacks.h>
 int g_frame_debug_logging = 0;
 
@@ -8677,7 +8677,9 @@ static void vsync_handler_post (void)
 	uae_log("vblank_hz = %0.2f\n", vblank_hz);
 #endif
 	if (fsemu) {
-		fsemu_frame_update_timing(vblank_hz, currprefs.turbo_emulation);
+		// fsemu_frame_update_timing(vblank_hz, currprefs.turbo_emulation);
+		// printf("vblank_hz = %0.2f\n", vblank_hz);
+		fsemu_frame_start(vblank_hz);
 	}
 #endif
 
@@ -9147,13 +9149,24 @@ static int64_t line_ended_at;
 
 // ---------------------------------------------------------------------------
 
+#ifdef FSEMU_CPU_X86
+#include <emmintrin.h>
+#endif
+
 static int64_t linesleep_fsemu(int64_t now, int64_t until)
 {
-#if 0
+#if 1
 	// FIXME: use busywait option?
 	if (now < until) {
 		int64_t sleep_start = now;
 		while (now < until) {
+#ifdef FSEMU_CPU_X86
+			// A bit uncertain about the effects of doing _mm_pause here, but
+			// it isn't likely to do any harm, and could have positive effects
+			// (lower power usage? yield some more to otherhyper threading
+			// core?). We haven't got any better thing to do...
+			_mm_pause();
+#endif
 			now = fsemu_time_us();
 		}
 		fsemu_frame_sleep_duration += now - sleep_start;

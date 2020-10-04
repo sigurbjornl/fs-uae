@@ -114,6 +114,12 @@ AX_CHECK_COMPILE_FLAG(-Wmissing-declarations,
 AM_CONDITIONAL([W_MISSING_DECLARATIONS],
 [test x$w_missing_declarations = xyes])
 
+AX_CHECK_COMPILE_FLAG(-Wpointer-arith,
+[w_pointer_arith=yes],
+[w_pointer_arith=no])
+AM_CONDITIONAL([W_POINTER_ARITH],
+[test x$w_pointer_arith = xyes])
+
 AX_CHECK_COMPILE_FLAG(-Werror=missing-declarations,
 [w_error_missing_declarations=yes],
 [w_error_missing_declarations=no])
@@ -298,6 +304,20 @@ PKG_CHECK_MODULES([OPENGL], [gl], [
 
 AC_DEFINE([USE_PNG], [1], [Define to 1 to use libpng])
 PKG_CHECK_MODULES([PNG], [libpng])
+
+# midi support via PortMidi
+AC_ARG_WITH([midi],
+    [AS_HELP_STRING([--without-midi], [serial Midi support via PortMidi])])
+AS_IF([test "x$with_midi" != xno], [
+    AC_CHECK_LIB([portmidi], [Pm_Initialize],[FOUND_PORTMIDI_LIB=yes])
+    AC_CHECK_HEADERS([portmidi.h porttime.h],[FOUND_PORTMIDI_HDR=yes])
+    AS_IF([test "x$FOUND_PORTMIDI_LIB$FOUND_PORTMIDI_HDR" = xyesyes], [
+        AC_MSG_NOTICE([enabling midi support])
+        MIDI_LIBS="-lportmidi"
+        AC_SUBST([MIDI_LIBS])
+        AC_DEFINE([WITH_MIDI], [1], [Define to 1 to use midi])
+    ])
+])
 
 AC_ARG_WITH(qt, AS_HELP_STRING(
     [--with-qt], [use QT]))

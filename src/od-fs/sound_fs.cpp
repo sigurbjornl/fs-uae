@@ -9,8 +9,8 @@
 
 #include <fs/emu/hacks.h>
 
-#include "fsemu/fsemu-audio.h"
-#include "fsemu/fsemu-audio-buffer.h"
+#include "fsemu-audio.h"
+#include "fsemu-audio-buffer.h"
 
 int have_sound = 0;
 
@@ -251,6 +251,8 @@ void amiga_flush_audio(void)
         return;
     }
     finish_sound_buffer();
+    fsemu_audio_buffer_frame_done();
+    // printf("%d\n", g_frequency);
 }
 
 void finish_sound_buffer (void)
